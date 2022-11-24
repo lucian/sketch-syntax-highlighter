@@ -6,7 +6,10 @@ import colorString from "color-string";
 import colorName from "color-name";
 import WebUI from "sketch-module-web-view";
 
-const SKETCH_VERSION = MSApplicationMetadata.metadata().appVersion;
+var sketch = require('sketch')
+var Rectangle = require('sketch/dom').Rectangle
+var Shape = require('sketch/dom').Shape
+
 const BG_LAYER_NAME = 'ssh-bg';
 const FONT_WEIGHTS_MAP = {
     regular: 'Menlo-Regular',
@@ -240,38 +243,38 @@ function hexToColor(hex) {
 }
 
 function createBgRect(layer, options) {
+
   const container = layer.parentGroup();
+
   const x = layer.frame().x();
   const y = layer.frame().y();
   const width  = layer.frame().width();
   const height = layer.frame().height();
 
+  // reset x,y to 0
+  layer.frame().setX(0);
+  layer.frame().setY(0);
+
   // Create rectangle
-  const rect   = MSRectangleShape.alloc().init();
-  rect.frame = MSRect.rectWithRect(NSMakeRect(x, y, width, height));
+  var rect = new Rectangle(0, 0, width, height);
+  var rectLayer = new Rectangle(x, y, width, height);
 
-  // Add default styling
-  const bg = MSShapeGroup.shapeWithPath(rect);
-  bg.setName(BG_LAYER_NAME);
-
-  if (options.bgColor) {
-    const fill = bg.style().addStylePartOfType(0);
-    fill.color = MSImmutableColor.colorWithSVGString(options.bgColor);
-  }
+  var rectShape = new Shape({
+    name: BG_LAYER_NAME,
+    frame: rect,
+    style: {fills: [options.bgColor] }
+  });
 
   container.removeLayer(layer);
 
-  const group = MSLayerGroup.new();
-  group.setName(layer.name());
-  group.addLayers([bg, layer]);
-  container.addLayers([group]);
+  // group
+  group = new sketch.Group({
+    parent: container,
+    name: layer.name(),
+    frame: rectLayer,
+    selected: true,
+    layers: [rectShape, layer],
 
-  group.resizeToFitChildrenWithOption(0);
+  });
 
-  // Select group
-  if (SKETCH_VERSION < 45) {
-    group.select_byExpandingSelection(true, true);
-  } else {
-    group.select_byExtendingSelection(true, true);
-  }
 }
